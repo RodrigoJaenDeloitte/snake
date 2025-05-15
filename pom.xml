@@ -41,10 +41,8 @@
 						<applicationName>${CLOUDHUB_APP_PREFIX}-${project.artifactId}</applicationName>
 						<environment>${environment}</environment>
 						<target>Cloudhub-US-East-2</target>
-						<workers>${cloudhub2.workers}</workers>
-						<workerType>${cloudhub2.workerType}</workerType>
-						<applyLatestRuntimePatch>true</applyLatestRuntimePatch>
-						<objectStoreV2>true</objectStoreV2>
+						<replicas>1</replicas>
+                        <vCores>0.1</vCores>
 					</cloudhub2Deployment>
 				</configuration>
         	</plugin>
