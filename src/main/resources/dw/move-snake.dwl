@@ -6,8 +6,9 @@ var you = payload.you
 var head = you.body[0]
 var neck = you.body[1]
 var body = you.body
+var bodyTail = body[1 to -1] // para evitar colisionar con la cabeza
 var board = payload.board
-var food = board.food
+var food = board.food default []
 var otherSnakes = board.snakes filter (s) -> s.id != you.id
 
 // Direcciones posibles
@@ -15,10 +16,10 @@ var directions = ["up", "down", "left", "right"]
 
 // Movimiento inverso (no volver al cuello)
 var opposite = 
-    if (neck.x < head.x) "left"
-    else if (neck.x > head.x) "right"
-    else if (neck.y < head.y) "down"
-    else "up"
+    if (neck.x < head.x) "right"
+    else if (neck.x > head.x) "left"
+    else if (neck.y < head.y) "up"
+    else "down"
 
 // Calcula nueva posición según movimiento
 fun newPos(pos, dir) =
@@ -36,7 +37,7 @@ fun isInside(pos) =
 
 // Verifica si se choca consigo mismo
 fun isSelfCollision(pos) =
-    body any (b) -> b.x == pos.x and b.y == pos.y
+    bodyTail any (b) -> b.x == pos.x and b.y == pos.y
 
 // Verifica si se choca con otro snake
 fun isOtherSnakeCollision(pos) =
@@ -59,9 +60,10 @@ fun manhattan(a, b) = abs(a.x - b.x) + abs(a.y - b.y)
 
 // Encuentra comida más cercana
 var closestFood =
-    if (isEmpty(food)) null
-    else
+    if (!isEmpty(food)) 
         food reduce ((a, b) -> if (manhattan(head, a) < manhattan(head, b)) a else b)
+    else 
+        null
 
 // Movimientos seguros
 var safeMoves = directions filter (d) -> isSafe(d)
@@ -94,7 +96,7 @@ var nextMove =
     else if (!isEmpty(safeMoves))
         safeMoves[randomInt(sizeOf(safeMoves))]
     else
-        // Último recurso: elegir cualquier dirección válida
+        // Último recurso: cualquier dirección dentro del mapa (aunque no sea segura)
         (directions filter (d) -> isInside(newPos(head, d)))[0] default "up"
 
 ---
