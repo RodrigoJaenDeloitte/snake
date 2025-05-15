@@ -51,6 +51,5 @@ jobs:
             -DANYPOINT_USER="${{ secrets.ANYPOINT_USERNAME }}" \
             -DANYPOINT_PASSWORD="${{ secrets.ANYPOINT_PASSWORD }}" \
             -Denvironment=Sandbox \
-            -Dcloudhub2.region=us-east-1 \
             -Dcloudhub2.workers=1 \
             -Dcloudhub2.workerType=MICRO

@@ -15,7 +15,6 @@
 		 <app.runtime>4.4.0</app.runtime>
 		<mule.maven.plugin.version>4.3.0</mule.maven.plugin.version>
 		<CLOUDHUB_APP_PREFIX>rodrigo14</CLOUDHUB_APP_PREFIX>
-		<cloudhub2.region>us-east-1</cloudhub2.region>
 		<cloudhub2.workers>1</cloudhub2.workers>
 		<cloudhub2.workerType>MICRO</cloudhub2.workerType>
 		<environment>Sandbox</environment>
@@ -41,7 +40,7 @@
 						<password>${ANYPOINT_PASSWORD}</password>
 						<applicationName>${CLOUDHUB_APP_PREFIX}-${project.artifactId}</applicationName>
 						<environment>${environment}</environment>
-						<region>${cloudhub2.region}</region>
+						<target>Cloudhub-US-East-2</target>
 						<workers>${cloudhub2.workers}</workers>
 						<workerType>${cloudhub2.workerType}</workerType>
 						<applyLatestRuntimePatch>true</applyLatestRuntimePatch>
