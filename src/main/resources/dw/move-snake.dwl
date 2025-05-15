@@ -1,95 +1,226 @@
 %dw 2.0
 output application/json
 
-var you = payload.you
-var head = you.body[0]
-var neck = you.body[1]
-var body = you.body
-var bodyTail = body[1 to -1]
-var board = payload.board
-var food = board.food default []
-var otherSnakes = board.snakes filter (s) -> s.id != you.id
-
-var directions = ["up", "down", "left", "right"]
-
-var opposite = 
-    if (neck.x < head.x) "right"
-    else if (neck.x > head.x) "left"
-    else if (neck.y < head.y) "up"
-    else "down"
-
-fun newPos(pos, dir) =
-    dir match {
-        case "up"    -> { x: pos.x,     y: pos.y + 1 }
-        case "down"  -> { x: pos.x,     y: pos.y - 1 }
-        case "left"  -> { x: pos.x - 1, y: pos.y }
-        case "right" -> { x: pos.x + 1, y: pos.y }
+// Declare functions
+fun isSafeDirection(direction, data) = do {
+    var myHead = data.you.head
+    var board = data.board
+    var myBody = data.you.body
+    
+    // Check if direction would go off the map
+    var offMap = direction match {
+        case "up" -> myHead.y >= board.height - 1
+        case "down" -> myHead.y <= 0
+        case "left" -> myHead.x <= 0
+        case "right" -> myHead.x >= board.width - 1
+        else -> false
     }
-
-fun isInside(pos) =
-    pos.x >= 0 and pos.x < board.width and
-    pos.y >= 0 and pos.y < board.height
-
-fun isSelfCollision(pos) =
-    sizeOf(bodyTail filter (b) -> b.x == pos.x and b.y == pos.y) > 0
-
-fun isOtherSnakeCollision(pos) =
-    sizeOf(
-        otherSnakes filter (s) ->
-            sizeOf(s.body filter (b) -> b.x == pos.x and b.y == pos.y) > 0
-    ) > 0
-
-fun isSafe(dir) =
-    do {
-        var pos = newPos(head, dir)
-        ---
-        dir != opposite and
-        isInside(pos) and
-        not isSelfCollision(pos) and
-        not isOtherSnakeCollision(pos)
+    
+    // Calculate next position based on direction
+    var nextPos = direction match {
+        case "up" -> { x: myHead.x, y: myHead.y + 1 }
+        case "down" -> { x: myHead.x, y: myHead.y - 1 }
+        case "left" -> { x: myHead.x - 1, y: myHead.y }
+        case "right" -> { x: myHead.x + 1, y: myHead.y }
+        else -> myHead
     }
+    
+    // Check for self-collision
+    var selfCollision = myBody some (segment) -> 
+        segment.x == nextPos.x and segment.y == nextPos.y
+    
+    // Check for collision with other snakes
+    var snakeCollision = board.snakes some (snake) -> 
+        snake.body some (segment) -> 
+            segment.x == nextPos.x and segment.y == nextPos.y
+    
+    // Check for head-to-head collision with larger snakes
+    var headCollision = board.snakes some (snake) -> do {
+        var enemyHead = snake.head
+        var enemyLength = sizeOf(snake.body)
+        var myLength = sizeOf(data.you.body)
+        
+        // Only consider snakes that aren't us
+        var notUs = snake.id != data.you.id
+        
+        // Calculate potential next position of enemy head
+        var enemyNextPos = {
+            up: { x: enemyHead.x, y: enemyHead.y + 1 },
+            down: { x: enemyHead.x, y: enemyHead.y - 1 },
+            left: { x: enemyHead.x - 1, y: enemyHead.y },
+            right: { x: enemyHead.x + 1, y: enemyHead.y }
+        }
+        
+        // Check if our next position would collide with enemy's potential next position
+        // AND enemy is larger or same size
+        var collision = (
+            enemyNextPos.up.x == nextPos.x and enemyNextPos.up.y == nextPos.y or
+            enemyNextPos.down.x == nextPos.x and enemyNextPos.down.y == nextPos.y or
+            enemyNextPos.left.x == nextPos.x and enemyNextPos.left.y == nextPos.y or
+            enemyNextPos.right.x == nextPos.x and enemyNextPos.right.y == nextPos.y
+        )
+        
+        // Return combined conditions
+        (notUs and collision and (enemyLength >= myLength))
+    }
+    // Return true if direction is safe
+    not (offMap or selfCollision or snakeCollision or headCollision)
+}
 
-fun manhattan(a, b) = abs(a.x - b.x) + abs(a.y - b.y)
+// Function to find safe directions
+fun findSafeDirections(data) = do {
+    var directions = ["up", "down", "left", "right"]
+    directions filter ((direction) -> isSafeDirection(direction, data))
+}
 
-var closestFood =
-    if (!isEmpty(food)) 
-        reduce(food, (a, b) -> if (manhattan(head, a) < manhattan(head, b)) a else b)
-    else 
+fun findFoodDirection(data, safeDirections) = do {
+    var myHead = data.you.head
+    var foods = data.board.food
+
+    if (isEmpty(foods) or isEmpty(safeDirections)) 
         null
+    else do {
+        var foodDistances = foods map (food) -> {
+            food: food,
+            distance: abs(myHead.x - food.x) + abs(myHead.y - food.y)
+        }
+        var sortedFoods = foodDistances orderBy $.distance
 
-var safeMoves = directions filter (d) -> isSafe(d)
+        if (isEmpty(sortedFoods)) 
+            null 
+        else do {
+            var closestFood = sortedFoods[0].food
+            var dx = closestFood.x - myHead.x
+            var dy = closestFood.y - myHead.y
 
-var foodMoves =
-    if (closestFood == null) []
-    else
-        safeMoves filter (d) -> 
-            manhattan(newPos(head, d), closestFood) < manhattan(head, closestFood)
-
-fun canAttack(dir) =
-    do {
-        var target = newPos(head, dir)
-        ---
-        sizeOf(
-            otherSnakes filter (s) ->
-                sizeOf(s.body) < sizeOf(body) and
-                manhattan(s.body[0], target) == 1
-        ) > 0
+            if (abs(dx) >= abs(dy)) {
+                if (dx > 0 and safeDirections contains "right") {
+                    "right"
+                }
+                else if (dx < 0 and safeDirections contains "left") {
+                    "left"
+                }
+                else if (dy > 0 and safeDirections contains "up") {
+                    "up"
+                }
+                else if (dy < 0 and safeDirections contains "down") {
+                    "down"
+                }
+                else {
+                    null
+                }
+            } else {
+                if (dy > 0 and safeDirections contains "up") {
+                    "up"
+                }
+                else if (dy < 0 and safeDirections contains "down") {
+                    "down"
+                }
+                else if (dx > 0 and safeDirections contains "right") {
+                    "right"
+                }
+                else if (dx < 0 and safeDirections contains "left") {
+                    "left"
+                }
+                else {
+                    null
+                }
+            }
+        }
     }
+}
 
-var attackMoves = safeMoves filter (d) -> canAttack(d)
+// Function to hunt smaller snakes
+fun huntSmallerSnakes(data, safeDirections) = do {
+    var myHead = data.you.head
+    var myLength = sizeOf(data.you.body)
+    
+    // Find smaller snakes
+    var smallerSnakes = data.board.snakes filter (snake) -> 
+        snake.id != data.you.id and sizeOf(snake.body) < myLength
+    
+    if (isEmpty(smallerSnakes) or isEmpty(safeDirections))
+        null
+    else do {
+        // Calculate distance to each smaller snake's head
+        var snakeDistances = smallerSnakes map (snake) -> {
+            snake: snake,
+            distance: abs(myHead.x - snake.head.x) + abs(myHead.y - snake.head.y)
+        }
+        
+        // Sort by distance (closest first)
+        var sortedSnakes = snakeDistances orderBy $.distance
+        
+        // Only consider snakes that are close enough
+        var closeSnakes = sortedSnakes filter (item) -> item.distance <= 5
+        
+        if (isEmpty(closeSnakes))
+            null
+        else do {
+            var targetSnake = closeSnakes[0].snake
+            var dx = targetSnake.head.x - myHead.x
+            var dy = targetSnake.head.y - myHead.y
 
-var nextMove =
-    if (!isEmpty(attackMoves)) 
-        attackMoves[randomInt(sizeOf(attackMoves))]
-    else if (!isEmpty(foodMoves)) 
-        foodMoves[randomInt(sizeOf(foodMoves))]
-    else if (!isEmpty(safeMoves))
-        safeMoves[randomInt(sizeOf(safeMoves))]
-    else
-        (directions filter (d) -> isInside(newPos(head, d)))[0] default "up"
+            if (abs(dx) >= abs(dy)) {
+                if (dx > 0 and safeDirections contains "right")
+                    "right"
+                else if (dx < 0 and safeDirections contains "left")
+                    "left"
+                else if (dy > 0 and safeDirections contains "up")
+                    "up"
+                else if (dy < 0 and safeDirections contains "down")
+                    "down"
+                else
+                    null
+            } else {
+                if (dy > 0 and safeDirections contains "up")
+                    "up"
+                else if (dy < 0 and safeDirections contains "down")
+                    "down"
+                else if (dx > 0 and safeDirections contains "right")
+                    "right"
+                else if (dx < 0 and safeDirections contains "left")
+                    "left"
+                else
+                    null
+            }
+        }
+    }
+}
+
+// Main function to choose direction
+fun chooseDirection(data) = do {
+    var safeDirections = findSafeDirections(data)
+    var myHealth = data.you.health
+    
+    if (isEmpty(safeDirections))
+        "up" // Desperate move if no safe directions
+    else do {
+        var direction = null
+        
+        // Priority 5: Try to kill smaller snakes if health is good
+        if (myHealth > 50) {
+            direction = huntSmallerSnakes(data, safeDirections)
+        }
+        
+        // Priority 3: Find food if health is low or no smaller snakes to hunt
+        if (direction == null) {
+            direction = findFoodDirection(data, safeDirections)
+        }
+        
+        // If no specific direction needed, pick a random safe direction
+        if (direction == null) {
+            var randomIndex = random() * sizeOf(safeDirections) as Number as Number {format: "###0"}
+            direction = safeDirections[randomIndex]
+        }
+        
+        direction
+    }
+}
 
 ---
+// Main function
 {
-    move: nextMove,
-    shout: "¡Spartano al ataque por la dirección $(nextMove)!"
+    move: chooseDirection(payload),
+    shout: "Voy a por ti"
 }
