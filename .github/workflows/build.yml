@@ -33,8 +33,8 @@ jobs:
             <servers>
               <server>
                 <id>anypoint-exchange-v3</id>
-                <username>${{ secrets.ANYPOINT_USERNAME }}</username>
-                <password>${{ secrets.ANYPOINT_PASSWORD }}</password>
+                <username>${{ secrets.ANYPOINT_PLATFORM_USERNAME }}</username>
+                <password>${{ secrets.ANYPOINT_PLATFORM_PASSWORD }}</password>
               </server>
             </servers>
           </settings>
@@ -48,8 +48,8 @@ jobs:
           artifactName=$(ls target/*.jar | head -1)
           ./mvnw clean deploy -DmuleDeploy \
             -Dmule.artifact=$artifactName \
-            -DANYPOINT_USER="${{ secrets.ANYPOINT_USERNAME }}" \
-            -DANYPOINT_PASSWORD="${{ secrets.ANYPOINT_PASSWORD }}" \
+            -DANYPOINT_USER="${{ secrets.ANYPOINT_PLATFORM_USERNAME }}" \
+            -DANYPOINT_PASSWORD="${{ secrets.ANYPOINT_PLATFORM_PASSWORD }}" \
             -Denvironment=Sandbox \
             -Dcloudhub2.workers=1 \
             -Dcloudhub2.workerType=MICRO
