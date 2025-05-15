@@ -1,27 +1,23 @@
 %dw 2.0
 output application/json
 
-// Variables principales
 var you = payload.you
 var head = you.body[0]
 var neck = you.body[1]
 var body = you.body
-var bodyTail = body[1 to -1] // para evitar colisionar con la cabeza
+var bodyTail = body[1 to -1]
 var board = payload.board
 var food = board.food default []
 var otherSnakes = board.snakes filter (s) -> s.id != you.id
 
-// Direcciones posibles
 var directions = ["up", "down", "left", "right"]
 
-// Movimiento inverso (no volver al cuello)
 var opposite = 
     if (neck.x < head.x) "right"
     else if (neck.x > head.x) "left"
     else if (neck.y < head.y) "up"
     else "down"
 
-// Calcula nueva posición según movimiento
 fun newPos(pos, dir) =
     dir match {
         case "up"    -> { x: pos.x,     y: pos.y + 1 }
@@ -30,21 +26,19 @@ fun newPos(pos, dir) =
         case "right" -> { x: pos.x + 1, y: pos.y }
     }
 
-// Verifica si está dentro del mapa
 fun isInside(pos) =
     pos.x >= 0 and pos.x < board.width and
     pos.y >= 0 and pos.y < board.height
 
-// Verifica si se choca consigo mismo
 fun isSelfCollision(pos) =
-    bodyTail any (b) -> b.x == pos.x and b.y == pos.y
+    sizeOf(bodyTail filter (b) -> b.x == pos.x and b.y == pos.y) > 0
 
-// Verifica si se choca con otro snake
 fun isOtherSnakeCollision(pos) =
-    otherSnakes any (s) -> 
-        s.body any (b) -> b.x == pos.x and b.y == pos.y
+    sizeOf(
+        otherSnakes filter (s) ->
+            sizeOf(s.body filter (b) -> b.x == pos.x and b.y == pos.y) > 0
+    ) > 0
 
-// Evalúa si moverse a esa dirección es seguro
 fun isSafe(dir) =
     do {
         var pos = newPos(head, dir)
@@ -55,39 +49,35 @@ fun isSafe(dir) =
         not isOtherSnakeCollision(pos)
     }
 
-// Distancia Manhattan
 fun manhattan(a, b) = abs(a.x - b.x) + abs(a.y - b.y)
 
-// Encuentra comida más cercana
 var closestFood =
     if (!isEmpty(food)) 
-        food reduce ((a, b) -> if (manhattan(head, a) < manhattan(head, b)) a else b)
+        reduce(food, (a, b) -> if (manhattan(head, a) < manhattan(head, b)) a else b)
     else 
         null
 
-// Movimientos seguros
 var safeMoves = directions filter (d) -> isSafe(d)
 
-// Si hay comida, elige movimientos que lo acerquen
 var foodMoves =
     if (closestFood == null) []
     else
         safeMoves filter (d) -> 
             manhattan(newPos(head, d), closestFood) < manhattan(head, closestFood)
 
-// Buscar posibilidad de ataque (cabeza enemiga cerca y más pequeña)
 fun canAttack(dir) =
     do {
         var target = newPos(head, dir)
         ---
-        otherSnakes any (s) -> 
-            sizeOf(s.body) < sizeOf(body) and
-            manhattan(s.body[0], target) == 1
+        sizeOf(
+            otherSnakes filter (s) ->
+                sizeOf(s.body) < sizeOf(body) and
+                manhattan(s.body[0], target) == 1
+        ) > 0
     }
 
 var attackMoves = safeMoves filter (d) -> canAttack(d)
 
-// Elegir el mejor movimiento
 var nextMove =
     if (!isEmpty(attackMoves)) 
         attackMoves[randomInt(sizeOf(attackMoves))]
@@ -96,7 +86,6 @@ var nextMove =
     else if (!isEmpty(safeMoves))
         safeMoves[randomInt(sizeOf(safeMoves))]
     else
-        // Último recurso: cualquier dirección dentro del mapa (aunque no sea segura)
         (directions filter (d) -> isInside(newPos(head, d)))[0] default "up"
 
 ---
