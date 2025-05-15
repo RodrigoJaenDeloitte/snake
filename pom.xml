@@ -34,7 +34,7 @@
 				<version>${mule.maven.plugin.version}</version>
 				<extensions>true</extensions>
 				<configuration>
-					<cloudHubDeployment>
+					<cloudHub2Deployment>
 						<uri>https://anypoint.mulesoft.com</uri>
 						<muleVersion>${app.runtime}</muleVersion>
 						<username>${ANYPOINT_USER}</username>
@@ -46,7 +46,7 @@
 						<workerType>${workerType}</workerType>
 						<applyLatestRuntimePatch>true</applyLatestRuntimePatch>
 						<objectStoreV2>true</objectStoreV2>
-					</cloudHubDeployment>
+					</cloudHub2Deployment>
 					<classifier>---- select project type ----</classifier>
 				</configuration>
 			</plugin>
