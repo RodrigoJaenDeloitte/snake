@@ -7,9 +7,6 @@ on:
   pull_request:
     branches: [ "main" ]
 
-env: 
-  CLOUDHUB_APP_PREFIX: ${{ vars.CLOUDHUB_APP_PREFIX }}
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -22,7 +19,7 @@ jobs:
         distribution: 'temurin'
         cache: maven
     - name: Build with Maven
-      run: ./mvnw -ntp -B package --file pom.xml -DskipMunitTests -DCLOUDHUB_APP_PREFIX=${CLOUDHUB_APP_PREFIX}
+      run: ./mvnw -ntp -B package --file pom.xml -DskipMunitTests 
     - name: Stamp artifact file name with commit hash
       run: |
         artifactName1=$(ls target/*.jar | head -1)
@@ -39,5 +36,4 @@ jobs:
         ./mvnw -ntp -B mule:deploy \
          -Dmule.artifact=$artifactName \
          -Danypoint.username="$USERNAME" \
-         -Danypoint.password="$PASSWORD" \
-         -DCLOUDHUB_APP_PREFIX=${CLOUDHUB_APP_PREFIX}
+         -Danypoint.password="$PASSWORD" 
