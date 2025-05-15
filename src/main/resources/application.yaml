@@ -2,7 +2,7 @@ battlesnake:
   config:
     "apiversion": "1"
     "author": "mmsonline"
-    "color" : "#4EC298"
+    "color" : "#4EC296"
     "head" : "tiger-king"
     "tail" : "curled"
     "version" : "0.0.1-beta"
