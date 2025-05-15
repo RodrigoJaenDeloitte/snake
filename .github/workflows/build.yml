@@ -1,46 +1,56 @@
-
-name: Build and Deploy
+name: CI - Deploy to CloudHub
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    branches:
+      - main
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
+
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up JDK 11
-      uses: actions/setup-java@v3
-      with:
-        java-version: '11'
-        distribution: 'temurin'
-        cache: maven
-    - name: Make Maven wrapper executable
-      run: chmod +x ./mvnw
-    - name: Build with Maven
-      run: ./mvnw -ntp -B package --file pom.xml -DskipMunitTests  
-    - name: Stamp artifact file name with commit hash
-      run: |
-        artifactName1=$(ls target/*.jar | head -1)
-        commitHash=$(git rev-parse --short "$GITHUB_SHA")
-        artifactName2=$(ls target/*.jar | head -1 | sed "s/.jar/-$commitHash.jar/g")
-        mv $artifactName1 $artifactName2
-    - name: Deploy to Sandbox
-      if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
-      env:
-        USERNAME: ${{ secrets.anypoint_platform_username }}
-        PASSWORD: ${{ secrets.anypoint_platform_password }}
-      run: |
-        artifactName=$(ls target/*.jar | head -1)
-        ./mvnw -ntp -B deploy \
-          -DmuleDeploy \
-          -Dmule.artifact=$artifactName \
-          -DANYPOINT_USER="$USERNAME" \
-          -DANYPOINT_PASSWORD="$PASSWORD" \
-          -Denvironment=Sandbox \
-          -Dcloudhub2.region=us-east-1 \
-          -Dcloudhub2.workers=1 \
-          -Dcloudhub2.workerType=MICRO
+      - name: Checkout project
+        uses: actions/checkout@v3
+
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Make Maven wrapper executable
+        run: chmod +x ./mvnw
+
+      - name: Set up Maven settings.xml
+        run: |
+          mkdir -p ~/.m2
+          cat <<EOF > ~/.m2/settings.xml
+          <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                    xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
+                                        https://maven.apache.org/xsd/settings-1.0.0.xsd">
+            <servers>
+              <server>
+                <id>anypoint-exchange-v3</id>
+                <username>${{ secrets.ANYPOINT_USERNAME }}</username>
+                <password>${{ secrets.ANYPOINT_PASSWORD }}</password>
+              </server>
+            </servers>
+          </settings>
+          EOF
+        
+      - name: Print Mule runtime version
+        run: ./mvnw help:evaluate -Dexpression=app.runtime -q -DforceStdout
+
+      - name: Deploy to CloudHub
+        run: |
+          artifactName=$(ls target/*.jar | head -1)
+          ./mvnw clean deploy -DmuleDeploy \
+            -Dmule.artifact=$artifactName \
+            -DANYPOINT_USER="${{ secrets.ANYPOINT_USERNAME }}" \
+            -DANYPOINT_PASSWORD="${{ secrets.ANYPOINT_PASSWORD }}" \
+            -Denvironment=Sandbox \
+            -Dcloudhub2.region=us-east-1 \
+            -Dcloudhub2.workers=1 \
+            -Dcloudhub2.workerType=MICRO
