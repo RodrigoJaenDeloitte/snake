@@ -12,12 +12,12 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-		<app.runtime>4.4.0</app.runtime>
+		 <app.runtime>4.4.0</app.runtime>
 		<mule.maven.plugin.version>4.3.0</mule.maven.plugin.version>
 		<CLOUDHUB_APP_PREFIX>rodrigo14</CLOUDHUB_APP_PREFIX>
-		<region>us-east-1</region>
-		<workers>1</workers>
-		<workerType>MICRO</workerType>
+		<cloudhub2.region>us-east-1</cloudhub2.region>
+		<cloudhub2.workers>1</cloudhub2.workers>
+		<cloudhub2.workerType>MICRO</cloudhub2.workerType>
 		<environment>Sandbox</environment>
 	</properties>
 
@@ -28,7 +28,7 @@
 				<artifactId>maven-clean-plugin</artifactId>
 				<version>3.0.0</version>
 			</plugin>
-			<plugin>
+			 <plugin>
 				<groupId>org.mule.tools.maven</groupId>
 				<artifactId>mule-maven-plugin</artifactId>
 				<version>${mule.maven.plugin.version}</version>
@@ -41,15 +41,14 @@
 						<password>${ANYPOINT_PASSWORD}</password>
 						<applicationName>${CLOUDHUB_APP_PREFIX}-${project.artifactId}</applicationName>
 						<environment>${environment}</environment>
-						<region>${region}</region>
-						<workers>${workers}</workers>
-						<workerType>${workerType}</workerType>
+						<region>${cloudhub2.region}</region>
+						<workers>${cloudhub2.workers}</workers>
+						<workerType>${cloudhub2.workerType}</workerType>
 						<applyLatestRuntimePatch>true</applyLatestRuntimePatch>
 						<objectStoreV2>true</objectStoreV2>
 					</cloudhub2Deployment>
-					<classifier>---- select project type ----</classifier>
 				</configuration>
-			</plugin>
+        	</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-enforcer-plugin</artifactId>
