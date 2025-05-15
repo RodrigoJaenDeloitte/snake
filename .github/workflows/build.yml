@@ -40,4 +40,7 @@ jobs:
           -Dmule.artifact=$artifactName \
           -DANYPOINT_USER="$USERNAME" \
           -DANYPOINT_PASSWORD="$PASSWORD" \
-          -Denvironment=Sandbox 
+          -Denvironment=Sandbox \
+          -Dcloudhub2.region=us-east-1 \
+          -Dcloudhub2.workers=1 \
+          -Dcloudhub2.workerType=MICRO
