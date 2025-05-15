@@ -39,7 +39,7 @@
 						<muleVersion>${app.runtime}</muleVersion>
 						<username>${ANYPOINT_USER}</username>
 						<password>${ANYPOINT_PASSWORD}</password>
-						<applicationName>${CLOUDHUB_APP_PREFIX}-${project.artifactId}</applicationName>
+						<applicationName>mule-battlesnake-starter</applicationName>
 						<environment>${environment}</environment>
 						<target>Cloudhub-US-East-2</target>
 						<replicas>1</replicas>
